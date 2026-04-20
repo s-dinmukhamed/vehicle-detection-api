@@ -14,7 +14,7 @@ def detect(image_path: str):
         for box in r.boxes:
 
             cls = model.names[int(box.cls)]
-            conf = float(round(box.conf, 2))
+            conf = round(float(box.conf), 2)
             x1,y1,x2,y2 = [int(v) for v in box.xyxy[0].tolist()]
 
             detections.append({
