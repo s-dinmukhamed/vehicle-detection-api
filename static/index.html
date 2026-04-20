@@ -32,7 +32,7 @@
       const data = await res.json();
 
       document.getElementById('output').innerHTML = `
-        <p>Найдено объектов: <b>${data.total}</b></p>
+        <p>Objects found: <b>${data.total}</b></p>
         <img src="data:image/jpeg;base64,${data.image}" />
         <pre>${JSON.stringify(data.detections, null, 2)}</pre>
       `;
