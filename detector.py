@@ -2,7 +2,6 @@ from ultralytics import YOLO
 import cv2
 import base64
 import subprocess
-import os
 
 model = YOLO("yolov8n.pt")
 
@@ -92,7 +91,6 @@ def detect_video(video_path: str, output_path: str):
         converted_path
     ], capture_output=True)
 
-    # считаем уникальные по классам
     stats = {}
     for tid, cls in class_counts.items():
         stats[cls] = stats.get(cls, 0) + 1
