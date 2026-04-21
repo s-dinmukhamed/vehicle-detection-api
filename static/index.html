@@ -1,83 +1,392 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-  <meta charset="utf-8"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Vehicle Detection</title>
   <style>
-    body { font-family: monospace; max-width: 700px; margin: 40px auto; padding: 0 20px; }
-    button { padding: 8px 16px; margin: 10px 0; cursor: pointer; }
-    img, video { max-width: 100%; margin-top: 16px; border-radius: 6px; }
-    pre { background: #f4f4f4; padding: 12px; border-radius: 6px; font-size: 13px; }
-    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-    .tab { padding: 8px 16px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; }
-    .tab.active { background: #000; color: #fff; }
-    .panel { display: none; }
-    .panel.active { display: block; }
+    :root {
+      --surface: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --primary: #111827;
+      --primary-contrast: #ffffff;
+      --bg-start: #fafaf9;
+      --bg-end: #f3f4f6;
+      --tab-surface: #f3f4f6;
+      --tab-text: #374151;
+      --panel-bg: #fcfcfc;
+      --field-bg: #ffffff;
+      --code-bg: #111827;
+      --code-text: #e5e7eb;
+      --radius: 14px;
+      --shadow: 0 8px 28px rgba(17, 24, 39, 0.06);
+    }
+
+    body[data-theme="dark"] {
+      --surface: #0f172a;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --line: #1f2937;
+      --primary: #f3f4f6;
+      --primary-contrast: #0f172a;
+      --bg-start: #020617;
+      --bg-end: #0b1222;
+      --tab-surface: #111827;
+      --tab-text: #d1d5db;
+      --panel-bg: #0b1326;
+      --field-bg: #0b1326;
+      --code-bg: #030712;
+      --code-text: #cbd5e1;
+      --shadow: 0 8px 28px rgba(2, 6, 23, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 760px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    .header {
+      margin-bottom: 18px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .tabs {
+      display: inline-flex;
+      gap: 6px;
+      background: var(--tab-surface);
+      border: 1px solid var(--line);
+      padding: 4px;
+      border-radius: 12px;
+      margin-bottom: 18px;
+    }
+
+    .tab {
+      border: 0;
+      background: transparent;
+      padding: 10px 14px;
+      border-radius: 8px;
+      color: var(--tab-text);
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .tab.active {
+      background: var(--primary);
+      color: var(--primary-contrast);
+    }
+
+    .panel {
+      display: none;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-bg);
+      padding: 16px;
+    }
+
+    .panel.active {
+      display: block;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="file"] {
+      flex: 1;
+      min-width: 220px;
+      border: 1px solid var(--line);
+      background: var(--field-bg);
+      border-radius: 10px;
+      padding: 10px;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    button {
+      border: 0;
+      background: var(--primary);
+      color: var(--primary-contrast);
+      padding: 10px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: opacity 0.2s ease;
+    }
+
+    .theme-toggle {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .output {
+      margin-top: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .status {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .result {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    img,
+    video {
+      max-width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--field-bg);
+    }
+
+    pre {
+      margin: 0;
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 10px;
+      padding: 12px;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        padding: 18px;
+        border-radius: 16px;
+      }
+
+      .title {
+        font-size: 22px;
+      }
+
+      .header-top {
+        align-items: flex-start;
+      }
+
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .theme-toggle {
+        width: auto;
+      }
+    }
   </style>
 </head>
 <body>
-  <h2>Vehicle Detection</h2>
+  <main class="app">
+    <header class="header">
+      <div class="header-top">
+        <h1 class="title">Vehicle Detection</h1>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch theme">Dark</button>
+      </div>
+      <p class="subtitle">Upload an image or video to detect vehicles</p>
+    </header>
 
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('image')">Image</div>
-    <div class="tab" onclick="switchTab('video')">Video</div>
-  </div>
+    <div class="tabs" role="tablist" aria-label="Upload type">
+      <button id="tab-image" class="tab active" role="tab" aria-selected="true" aria-controls="image-panel" data-tab="image">Image</button>
+      <button id="tab-video" class="tab" role="tab" aria-selected="false" aria-controls="video-panel" data-tab="video">Video</button>
+    </div>
 
-  <div id="image-panel" class="panel active">
-    <input type="file" id="imageInput" accept="image/*"/>
-    <br>
-    <button onclick="uploadImage()">Detect</button>
-    <div id="image-output"></div>
-  </div>
+    <section id="image-panel" class="panel active" role="tabpanel" aria-labelledby="tab-image">
+      <div class="controls">
+        <input type="file" id="imageInput" accept="image/*" />
+        <button id="imageBtn" type="button">Detect</button>
+      </div>
+      <div id="image-output" class="output"></div>
+    </section>
 
-  <div id="video-panel" class="panel">
-    <input type="file" id="videoInput" accept="video/*"/>
-    <br>
-    <button onclick="uploadVideo()">Detect</button>
-    <div id="video-output"></div>
-  </div>
+    <section id="video-panel" class="panel" role="tabpanel" aria-labelledby="tab-video">
+      <div class="controls">
+        <input type="file" id="videoInput" accept="video/*" />
+        <button id="videoBtn" type="button">Detect</button>
+      </div>
+      <div id="video-output" class="output"></div>
+    </section>
+  </main>
 
   <script>
-    function switchTab(tab) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      document.getElementById(tab + '-panel').classList.add('active');
-      event.target.classList.add('active');
+    const themeToggle = document.getElementById('themeToggle');
+    const tabs = document.querySelectorAll('.tab');
+    const panels = document.querySelectorAll('.panel');
+
+    function setTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+      themeToggle.textContent = theme === 'dark' ? 'Light' : 'Dark';
+    }
+
+    const savedTheme = localStorage.getItem('theme');
+    setTheme(savedTheme === 'dark' ? 'dark' : 'light');
+
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = document.body.getAttribute('data-theme');
+      setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    });
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+    });
+
+    function switchTab(tabName) {
+      tabs.forEach((tab) => {
+        const active = tab.dataset.tab === tabName;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+      });
+
+      panels.forEach((panel) => {
+        panel.classList.toggle('active', panel.id === `${tabName}-panel`);
+      });
+    }
+
+    document.getElementById('imageBtn').addEventListener('click', uploadImage);
+    document.getElementById('videoBtn').addEventListener('click', uploadVideo);
+
+    function renderStatus(containerId, message) {
+      document.getElementById(containerId).innerHTML = `<p class="status">${message}</p>`;
     }
 
     async function uploadImage() {
       const file = document.getElementById('imageInput').files[0];
-      if (!file) return;
-      document.getElementById('image-output').innerHTML = 'Processing...';
+      if (!file) {
+        renderStatus('image-output', 'Please select an image.');
+        return;
+      }
 
-      const form = new FormData();
-      form.append('file', file);
+      const output = document.getElementById('image-output');
+      const button = document.getElementById('imageBtn');
+      renderStatus('image-output', 'Processing image...');
+      button.disabled = true;
 
-      const res = await fetch('/detect', { method: 'POST', body: form });
-      const data = await res.json();
+      try {
+        const form = new FormData();
+        form.append('file', file);
 
-      document.getElementById('image-output').innerHTML = `
-        <p>Найдено: <b>${data.total}</b></p>
-        <img src="data:image/jpeg;base64,${data.image}" />
-        <pre>${JSON.stringify(data.detections, null, 2)}</pre>
-      `;
+        const res = await fetch('/detect', { method: 'POST', body: form });
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+        const data = await res.json();
+        output.innerHTML = `
+          <p class="result">Found: <b>${data.total ?? 0}</b></p>
+          <img alt="Detection result" src="data:image/jpeg;base64,${data.image}" />
+          <pre>${JSON.stringify(data.detections ?? [], null, 2)}</pre>
+        `;
+      } catch (error) {
+        renderStatus('image-output', `Failed to process image: ${error.message}`);
+      } finally {
+        button.disabled = false;
+      }
     }
 
     async function uploadVideo() {
       const file = document.getElementById('videoInput').files[0];
-      if (!file) return;
-      document.getElementById('video-output').innerHTML = 'Processing... (may take a while)';
+      if (!file) {
+        renderStatus('video-output', 'Please select a video.');
+        return;
+      }
 
-      const form = new FormData();
-      form.append('file', file);
+      const output = document.getElementById('video-output');
+      const button = document.getElementById('videoBtn');
+      renderStatus('video-output', 'Processing video... this may take a while.');
+      button.disabled = true;
 
-      const res = await fetch('/detect/video', { method: 'POST', body: form });
-      const data = await res.json();
+      try {
+        const form = new FormData();
+        form.append('file', file);
 
-      document.getElementById('video-output').innerHTML = `
-        <pre>${JSON.stringify(data.stats, null, 2)}</pre>
-        <video controls src="${data.output_video}"></video>
-      `;
+        const res = await fetch('/detect/video', { method: 'POST', body: form });
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+        const data = await res.json();
+        output.innerHTML = `
+          <pre>${JSON.stringify(data.stats ?? {}, null, 2)}</pre>
+          <video controls src="${data.output_video}"></video>
+        `;
+      } catch (error) {
+        renderStatus('video-output', `Failed to process video: ${error.message}`);
+      } finally {
+        button.disabled = false;
+      }
     }
   </script>
 </body>
