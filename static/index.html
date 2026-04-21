@@ -6,24 +6,49 @@
   <style>
     body { font-family: monospace; max-width: 700px; margin: 40px auto; padding: 0 20px; }
     button { padding: 8px 16px; margin: 10px 0; cursor: pointer; }
-    img { max-width: 100%; margin-top: 16px; border-radius: 6px; }
+    img, video { max-width: 100%; margin-top: 16px; border-radius: 6px; }
     pre { background: #f4f4f4; padding: 12px; border-radius: 6px; font-size: 13px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab { padding: 8px 16px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; }
+    .tab.active { background: #000; color: #fff; }
+    .panel { display: none; }
+    .panel.active { display: block; }
   </style>
 </head>
 <body>
   <h2>Vehicle Detection</h2>
-  <input type="file" id="fileInput" accept="image/*"/>
-  <br>
-  <button onclick="upload()">Detect</button>
 
-  <div id="output"></div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('image')">Image</div>
+    <div class="tab" onclick="switchTab('video')">Video</div>
+  </div>
+
+  <div id="image-panel" class="panel active">
+    <input type="file" id="imageInput" accept="image/*"/>
+    <br>
+    <button onclick="uploadImage()">Detect</button>
+    <div id="image-output"></div>
+  </div>
+
+  <div id="video-panel" class="panel">
+    <input type="file" id="videoInput" accept="video/*"/>
+    <br>
+    <button onclick="uploadVideo()">Detect</button>
+    <div id="video-output"></div>
+  </div>
 
   <script>
-    async function upload() {
-      const file = document.getElementById('fileInput').files[0];
-      if (!file) return;
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(tab + '-panel').classList.add('active');
+      event.target.classList.add('active');
+    }
 
-      document.getElementById('output').innerHTML = 'Processing...';
+    async function uploadImage() {
+      const file = document.getElementById('imageInput').files[0];
+      if (!file) return;
+      document.getElementById('image-output').innerHTML = 'Processing...';
 
       const form = new FormData();
       form.append('file', file);
@@ -31,10 +56,27 @@
       const res = await fetch('/detect', { method: 'POST', body: form });
       const data = await res.json();
 
-      document.getElementById('output').innerHTML = `
-        <p>Objects found: <b>${data.total}</b></p>
+      document.getElementById('image-output').innerHTML = `
+        <p>Найдено: <b>${data.total}</b></p>
         <img src="data:image/jpeg;base64,${data.image}" />
         <pre>${JSON.stringify(data.detections, null, 2)}</pre>
+      `;
+    }
+
+    async function uploadVideo() {
+      const file = document.getElementById('videoInput').files[0];
+      if (!file) return;
+      document.getElementById('video-output').innerHTML = 'Processing... (may take a while)';
+
+      const form = new FormData();
+      form.append('file', file);
+
+      const res = await fetch('/detect/video', { method: 'POST', body: form });
+      const data = await res.json();
+
+      document.getElementById('video-output').innerHTML = `
+        <pre>${JSON.stringify(data.stats, null, 2)}</pre>
+        <video controls src="${data.output_video}"></video>
       `;
     }
   </script>
