@@ -1,8 +1,9 @@
 # vehicle-detection-api
 
-REST API for detecting vehicles in images using YOLOv8.
+REST API for detecting and tracking vehicles in images and videos using YOLOv8.
 
-<img width="1264" height="862" alt="Снимок экрана 2026-04-20 в 09 24 48" src="https://github.com/user-attachments/assets/3966466f-b3b8-4685-bded-43035c243544" />
+<img width="1258" height="860" alt="Снимок экрана 2026-04-21 в 19 34 41" src="https://github.com/user-attachments/assets/a970938e-6e3f-4430-b18c-517dd7fdb63e" />
+
 
 ## Features 
 1. Detects cars, trucks, buses and motorcycles
