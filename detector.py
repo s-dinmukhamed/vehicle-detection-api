@@ -85,7 +85,6 @@ def detect_video(video_path: str, output_path: str):
     cap.release()
     out.release()
 
-    # конвертируем в H.264
     converted_path = output_path.replace(".mp4", "_web.mp4")
     subprocess.run([
         "ffmpeg", "-y", "-i", output_path,
