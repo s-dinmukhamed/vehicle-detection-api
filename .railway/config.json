@@ -1,0 +1,5 @@
+{
+  "build": {
+    "buildTimeoutSeconds": 1800
+  }
+}
