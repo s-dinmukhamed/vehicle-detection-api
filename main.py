@@ -4,12 +4,17 @@ from fastapi.responses import HTMLResponse, FileResponse
 import os
 import shutil
 from detector import detect as run_detect, detect_video
+from database import SessionLocal, Detection, init_db
 
 app = FastAPI()
 
 os.makedirs("uploads", exist_ok=True)
 os.makedirs("outputs", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.on_event("startup")
+def startup():
+    init_db()
 
 @app.post("/detect")
 async def detect_endpoint(file: UploadFile = File(...)):
@@ -19,7 +24,20 @@ async def detect_endpoint(file: UploadFile = File(...)):
 
     detections, img_base64 = run_detect(file_path)
 
+    db = SessionLocal()
+    record = Detection(
+        filename=file.filename,
+        type="image",
+        total=len(detections),
+        detections=detections
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    db.close()
+
     return {
+        "id": record.id,
         "filename": file.filename,
         "total": len(detections),
         "detections": detections,
@@ -37,11 +55,49 @@ async def detect_video_endpoint(file: UploadFile = File(...)):
     stats, converted_path = detect_video(input_path, output_path)
     video_filename = os.path.basename(converted_path)
 
+    db = SessionLocal()
+    record = Detection(
+        filename=file.filename,
+        type="video",
+        total=stats["unique_vehicles"],
+        detections=stats
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    db.close()
+
     return {
+        "id": record.id,
         "filename": file.filename,
         "output_video": f"/video/{video_filename}",
         "stats": stats
     }
+
+@app.get("/history")
+async def get_history():
+    db = SessionLocal()
+    records = db.query(Detection).order_by(Detection.created_at.desc()).limit(50).all()
+    db.close()
+    return [
+        {
+            "id": r.id,
+            "filename": r.filename,
+            "type": r.type,
+            "total": r.total,
+            "created_at": r.created_at
+        }
+        for r in records
+    ]
+
+@app.get("/history/{detection_id}")
+async def get_detection(detection_id: int):
+    db = SessionLocal()
+    record = db.query(Detection).filter(Detection.id == detection_id).first()
+    db.close()
+    if not record:
+        return {"error": "Not found"}
+    return record
 
 @app.get("/video/{filename}")
 async def get_video(filename: str):
