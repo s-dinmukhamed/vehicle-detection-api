@@ -1,3 +1,15 @@
+---
+title: Vehicle Detection API
+emoji: 🚗
+colorFrom: green
+colorTo: blue
+sdk: docker
+pinned: false
+---
+
+# Vehicle Detection API
+...
+
 # vehicle-detection-api
 
 REST API for detecting and tracking vehicles in images and videos using YOLOv8.
