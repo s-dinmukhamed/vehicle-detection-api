@@ -5,13 +5,14 @@ import subprocess
 import os
 
 model = YOLO("yolov8n.pt")
+car_model = YOLO("best.pt")
 
 VEHICLE_CLASSES = {"car", "truck", "bus", "motorcycle", "bicycle", "airplane", "boat"}
 
 COLORS = [
-    (255, 99, 99),   (99, 255, 99),   (99, 99, 255),
-    (255, 199, 99),  (99, 255, 255),  (255, 99, 255),
-    (180, 255, 99),  (99, 180, 255),  (255, 99, 180),
+    (255, 99, 99),  (99, 255, 99),  (99, 99, 255),
+    (255, 199, 99), (99, 255, 255), (255, 99, 255),
+    (180, 255, 99), (99, 180, 255), (255, 99, 180),
     (200, 200, 99),
 ]
 
@@ -24,6 +25,16 @@ def draw_box(frame, x1, y1, x2, y2, label, color):
     cv2.rectangle(frame, (x1, y1 - th - 8), (x1 + tw + 6, y1), color, -1)
     cv2.putText(frame, label, (x1 + 3, y1 - 4),
         cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 0), 1, cv2.LINE_AA)
+
+def classify_car(img, x1, y1, x2, y2):
+    crop = img[y1:y2, x1:x2]
+    if crop.size == 0:
+        return "unknown"
+    results = car_model(crop, verbose=False)
+    for r in results:
+        for box in r.boxes:
+            return car_model.names[int(box.cls)]
+    return "unknown"
 
 def detect(image_path: str):
     results = model(image_path)
@@ -40,15 +51,19 @@ def detect(image_path: str):
             track_id = i + 1
             color = get_color(track_id)
 
+            car_type = classify_car(img, x1, y1, x2, y2)
+
             detections.append({
                 "id": track_id,
                 "class": cls,
+                "car_model": car_type,
                 "confidence": conf,
                 "bbox": [x1, y1, x2, y2],
                 "color": f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
             })
 
-            draw_box(img, x1, y1, x2, y2, f"#{track_id} {cls} {conf}", color)
+            label = f"#{track_id} {car_type} {conf}"
+            draw_box(img, x1, y1, x2, y2, label, color)
 
     _, buffer = cv2.imencode(".jpg", img)
     img_base64 = base64.b64encode(buffer).decode("utf-8")
@@ -85,16 +100,19 @@ def detect_video(video_path: str, output_path: str):
 
                 tid = int(track_id)
                 unique_ids.add(tid)
-
-                if tid not in class_counts:
-                    class_counts[tid] = cls
-
                 color = get_color(tid)
                 id_colors[tid] = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
 
                 conf = round(float(box.conf), 2)
                 x1, y1, x2, y2 = [int(v) for v in box.xyxy[0].tolist()]
-                draw_box(frame, x1, y1, x2, y2, f"#{tid} {cls} {conf}", color)
+
+                car_type = classify_car(frame, x1, y1, x2, y2)
+
+                if tid not in class_counts:
+                    class_counts[tid] = car_type
+
+                draw_box(frame, x1, y1, x2, y2,
+                    f"#{tid} {car_type} {conf}", color)
 
         out.write(frame)
 
